@@ -5,3 +5,9 @@ import romulus.Semantics.Hypercall
 import romulus.Semantics.Transition
 import romulus.Semantics.Refinement
 import romulus.Semantics.Execution
+import romulus.Proofs.Ownership
+import romulus.Proofs.Mapping
+import romulus.Proofs.Sharing
+import romulus.Proofs.Revocation
+import romulus.Proofs.Reclamation
+import romulus.Proofs.Preservation
