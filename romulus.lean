@@ -11,3 +11,5 @@ import romulus.Proofs.Sharing
 import romulus.Proofs.Revocation
 import romulus.Proofs.Reclamation
 import romulus.Proofs.Preservation
+import romulus.TLB.Model
+import romulus.TLB.Safety
