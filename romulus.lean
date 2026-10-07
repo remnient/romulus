@@ -13,3 +13,4 @@ import romulus.Proofs.Reclamation
 import romulus.Proofs.Preservation
 import romulus.TLB.Model
 import romulus.TLB.Safety
+import romulus.Proofs.Isolation
