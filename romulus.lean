@@ -16,4 +16,5 @@ import romulus.TLB.Safety
 import romulus.Proofs.Isolation
 import romulus.System.Events
 import romulus.System.Scheduler
+import romulus.System.Device
 import romulus.MMU.PageTable
