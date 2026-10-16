@@ -1,0 +1,46 @@
+digraph revocation {
+  rankdir=TB;
+  bgcolor="white";
+  graph [fontname="Latin Modern Roman", fontsize=8, nodesep=0.22, ranksep=0.3];
+  node  [color=black, fontcolor=black, fontname="Latin Modern Roman", fontsize=8,
+         height=0.3, margin="0.07,0.03"];
+  edge  [color=black, fontcolor=black, fontname="Latin Modern Roman",
+         fontsize=7, arrowsize=0.5];
+
+  start   [shape=box, label="revoke(c)"];
+  dslot   [shape=diamond, label="slot c occupied?", height=0.5, width=1.4];
+  fail1   [shape=box, label="fail: unknown cap"];
+  remove  [shape=box, label="remove cap c"];
+  drop    [shape=box, label="drop derived PTEs"];
+  record  [shape=box, label="record invalidation"];
+  notify  [shape=box, label="deliver notice"];
+  dflush  [shape=diamond, label="invalidation acked?", height=0.5, width=1.6];
+  wait    [shape=box, label="flush(g, p)"];
+  dack    [shape=diamond, label="notice acked?", height=0.5, width=1.3];
+  ack     [shape=box, label="acknowledge(g)"];
+  dbegin  [shape=diamond, label="owns and unpinned?", height=0.5, width=1.6];
+  fail2   [shape=box, label="fail: not owned / pinned"];
+  dclean  [shape=diamond, label="no maps, caps, pins,\ncached, pending?", height=0.75, width=2.0];
+  fail3   [shape=box, label="fail: mapped / shared /\npinned / stale / pending"];
+  zero    [shape=box, label="zero contents,\nbump epoch, free"];
+  done    [shape=box, label="reusable"];
+
+  start  -> dslot;
+  dslot  -> fail1  [label="no"];
+  dslot  -> remove [label="yes"];
+  remove -> drop;
+  drop   -> record;
+  record -> notify;
+  notify -> dflush;
+  dflush -> wait   [label="no"];
+  wait   -> dflush;
+  dflush -> dack   [label="yes"];
+  dack   -> ack    [label="yes"];
+  ack    -> dbegin;
+  dack   -> dbegin [label="no"];
+  dbegin -> fail2  [label="no"];
+  dbegin -> dclean [label="yes"];
+  dclean -> fail3  [label="no"];
+  dclean -> zero   [label="yes"];
+  zero   -> done;
+}

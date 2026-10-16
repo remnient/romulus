@@ -19,3 +19,5 @@ import romulus.System.Events
 import romulus.System.Scheduler
 import romulus.System.Device
 import romulus.MMU.PageTable
+import romulus.Examples.Scenarios
+import romulus.Examples.Counterexamples

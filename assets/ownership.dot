@@ -1,0 +1,21 @@
+digraph ownership {
+  rankdir=LR;
+  bgcolor="white";
+  graph [fontname="Latin Modern Roman", fontsize=8, nodesep=0.25, ranksep=0.45];
+  node  [shape=box, style=solid, color=black, fontcolor=black,
+         fontname="Latin Modern Roman", fontsize=8, height=0.32, margin="0.07,0.03"];
+  edge  [color=black, fontcolor=black, fontname="Latin Modern Roman",
+         fontsize=7, arrowsize=0.5];
+
+  free       [label="free"];
+  owned      [label="owned(g)"];
+  reclaiming [label="reclaiming(g)"];
+  shared     [label="shared(c)", style=dashed];
+
+  free       -> owned      [label="allocate(g)"];
+  owned      -> reclaiming [label="beginReclaim(g)"];
+  reclaiming -> free       [label="reclaim\n[unreferenced, unpinned]"];
+  owned      -> owned      [label="pin / unpin"];
+  reclaiming -> reclaiming [label="unmap / revoke / flush"];
+  owned      -> shared     [style=dashed, dir=both, label="share / revoke"];
+}

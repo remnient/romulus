@@ -1,6 +1,13 @@
 name = "romulus"
 version = "0.1.0"
-defaultTargets = ["romulus"]
+defaultTargets = ["romulus", "romulusTests", "romulus-demo"]
 
 [[lean_lib]]
 name = "romulus"
+
+[[lean_lib]]
+name = "romulusTests"
+
+[[lean_exe]]
+name = "romulus-demo"
+root = "Main"
