@@ -7,6 +7,70 @@ namespace Romulus
 
 variable {cfg : Config}
 
+theorem accessWithFill_preserves {s t : MachineState cfg} (hwf : WellFormed s)
+    {g : GuestId cfg} {p : GuestPage cfg} {op : AccessOp} {f : FrameId cfg}
+    (h : accessWithFill s g op p = .ok (f, t)) : WellFormed t := by
+  unfold accessWithFill at h
+  split at h
+  · split at h
+    · cases h; exact hwf
+    · contradiction
+  · split at h
+    · rename_i m hm
+      split at h
+      · cases h
+        refine ⟨hwf.mapping_authority, hwf.capability_epoch, hwf.capability_allocated,
+          hwf.pins_owned, hwf.reclaiming_unpinned, ?_, hwf.vacant_unreferenced⟩
+        intro g' p' e he
+        by_cases hslot : g' = g ∧ p' = p
+        · obtain ⟨hg, hp⟩ := hslot
+          subst g'
+          subst p'
+          simp only [setTlb_self, Option.some.injEq] at he
+          subst e
+          have hj := hwf.mapping_authority g p m hm
+          cases ho : m.origin with
+          | ownership => exact ⟨g, by simpa [MappingJustified, ho] using hj⟩
+          | shared =>
+              obtain ⟨c, hc⟩ := (show ∃ c, capGrants s g m.frame m.perms c from
+                by simpa [MappingJustified, ho] using hj)
+              unfold capGrants at hc
+              cases hs : s.shares c with
+              | none => simp [hs] at hc
+              | some cap =>
+                  obtain ⟨-, hf, -, -⟩ := (show cap.holder = g ∧ cap.frame = m.frame ∧
+                    cap.epoch = s.epoch m.frame ∧ Permission.leq m.perms cap.perms from
+                    by simpa [hs] using hc)
+                  rw [← hf]
+                  exact hwf.capability_allocated c cap hs
+        · exact hwf.tlb_allocated g' p' e (by
+            rwa [setTlb_tlb_of_ne s g p _ hslot] at he)
+      · contradiction
+    · contradiction
+
+theorem accessWithFill_authorised {s t : MachineState cfg} (hwf : WellFormed s)
+    {g : GuestId cfg} {p : GuestPage cfg} (hc : pageCoherent s g p)
+    {op : AccessOp} {f : FrameId cfg} (h : accessWithFill s g op p = .ok (f, t)) :
+    s.status f = .owned g ∨ s.status f = .reclaiming g ∨
+      ∃ cap : ShareCapability cfg,
+        (∃ c : CapabilityId cfg, s.shares c = some cap) ∧
+        cap.holder = g ∧ cap.frame = f ∧ permAllows cap.perms op := by
+  apply access_authorised hwf hc
+  rw [← accessWithFill_result, h]
+  rfl
+
+theorem accessWithFill_miss_authorised {s t : MachineState cfg} (hwf : WellFormed s)
+    {g : GuestId cfg} {p : GuestPage cfg} (ht : s.tlb g p = none)
+    {op : AccessOp} {f : FrameId cfg} (h : accessWithFill s g op p = .ok (f, t)) :
+    s.status f = .owned g ∨ s.status f = .reclaiming g ∨
+      ∃ cap : ShareCapability cfg,
+        (∃ c : CapabilityId cfg, s.shares c = some cap) ∧
+        cap.holder = g ∧ cap.frame = f ∧ permAllows cap.perms op := by
+  apply accessWithFill_authorised hwf _ h
+  intro e he
+  rw [ht] at he
+  contradiction
+
 theorem readVia_of_tlb {s : MachineState cfg} {g : GuestId cfg} {p : GuestPage cfg} {e : TlbEntry cfg}
     (he : s.tlb g p = some e) (hr : e.perms.read = true) :
     readVia s g p = some (s.contents e.frame) := by
