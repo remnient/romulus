@@ -20,6 +20,13 @@ preserves `WellFormed`, and a fill is authorised by the current mapping. Cached
 access authorisation requires coherence because revocation retains stale entries
 until a flush.
 
+`reclaimFrame` constructs a finite hypercall trace for an owned, unpinned frame.
+It begins reclamation, revokes capabilities for the frame, removes its remaining
+mappings, flushes every guest page and reclaims the frame. `reclaimFrame_succeeds`
+proves that this trace executes from any such `WellFormed` state, preserves the
+invariant, zeroes the contents and increments the epoch. This is a sequential
+cleanup construction with a full cache flush, and assumes no intervening calls.
+
 Every hypercall, event and finite execution preserves `WellFormed`:
 
 ```lean
