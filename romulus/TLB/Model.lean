@@ -39,6 +39,58 @@ def access (s : MachineState cfg) (g : GuestId cfg) (op : AccessOp) (p : GuestPa
 def pageCoherent (s : MachineState cfg) (g : GuestId cfg) (p : GuestPage cfg) : Prop :=
   ∀ e, s.tlb g p = some e → ∃ m, s.mappings g p = some m ∧ m.frame = e.frame ∧ m.perms = e.perms
 
+def accessWithFill (s : MachineState cfg) (g : GuestId cfg) (op : AccessOp) (p : GuestPage cfg) :
+    Except AccessError (FrameId cfg × MachineState cfg) :=
+  match s.tlb g p with
+  | some e =>
+      if permAllows e.perms op then .ok (e.frame, s) else .error .permissionDenied
+  | none =>
+      match s.mappings g p with
+      | some m =>
+          if permAllows m.perms op then
+            .ok (m.frame, setTlb s g p (some ⟨m.frame, m.perms⟩))
+          else .error .permissionDenied
+      | none => .error .noTranslation
+
+theorem accessWithFill_result (s : MachineState cfg) (g : GuestId cfg) (op : AccessOp)
+    (p : GuestPage cfg) : (accessWithFill s g op p).map Prod.fst = access s g op p := by
+  unfold accessWithFill access
+  split
+  · split <;> rfl
+  · split
+    · split <;> rfl
+    · rfl
+
+theorem accessWithFill_miss {s : MachineState cfg} {g : GuestId cfg} {p : GuestPage cfg}
+    {m : Mapping cfg} {op : AccessOp} (ht : s.tlb g p = none)
+    (hm : s.mappings g p = some m) (hp : permAllows m.perms op) :
+    accessWithFill s g op p = .ok (m.frame, setTlb s g p (some ⟨m.frame, m.perms⟩)) := by
+  simp [accessWithFill, ht, hm, hp]
+
+theorem accessWithFill_hit {s : MachineState cfg} {g : GuestId cfg} {p : GuestPage cfg}
+    {e : TlbEntry cfg} {op : AccessOp} (ht : s.tlb g p = some e)
+    (hp : permAllows e.perms op) : accessWithFill s g op p = .ok (e.frame, s) := by
+  simp [accessWithFill, ht, hp]
+
+theorem accessWithFill_coherent {s t : MachineState cfg} {g : GuestId cfg}
+    {p : GuestPage cfg} {op : AccessOp} {f : FrameId cfg} (hc : pageCoherent s g p)
+    (h : accessWithFill s g op p = .ok (f, t)) : pageCoherent t g p := by
+  unfold accessWithFill at h
+  split at h
+  · split at h
+    · cases h; exact hc
+    · contradiction
+  · split at h
+    · rename_i m hm
+      split at h
+      · cases h
+        intro e he
+        simp only [setTlb_self, Option.some.injEq] at he
+        subst e
+        exact ⟨m, hm, rfl, rfl⟩
+      · contradiction
+    · contradiction
+
 theorem access_congr {s t : MachineState cfg} {g : GuestId cfg}
     (htlb : ∀ p, cachedTranslationOf t g p = cachedTranslationOf s g p)
     (hmap : ∀ p, translationOf t g p = translationOf s g p) :

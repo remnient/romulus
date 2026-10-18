@@ -13,7 +13,12 @@ theorem walk_authorised (hwf : WellFormed s) (hr : Represents pt s)
         cap.frame = f ∧ permAllows cap.perms op := ...
 ```
 
-`access` is the same walk behind a cache
+`access` is the same walk behind a cache. `accessWithFill` returns the frame and
+updated state, installing the mapping's exact permissions on a successful cache
+miss. Hits retain the state and denied accesses return an error. The operation
+preserves `WellFormed`, and a fill is authorised by the current mapping. Cached
+access authorisation requires coherence because revocation retains stale entries
+until a flush.
 
 Every hypercall, event and finite execution preserves `WellFormed`:
 
